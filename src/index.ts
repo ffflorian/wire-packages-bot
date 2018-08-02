@@ -19,7 +19,9 @@ import { MainHandler } from './MainHandler';
     password: String(process.env.WIRE_PASSWORD),
   });
 
-  bot.addHandler(new MainHandler());
+  const mainHandler = new MainHandler(String(process.env.LIBRARIES_API_KEY))
+
+  bot.addHandler(mainHandler);
 
   await bot.start();
 })();

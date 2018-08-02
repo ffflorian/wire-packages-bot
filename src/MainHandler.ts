@@ -12,10 +12,12 @@ const { version }: { version: string } = require('../package.json');
 const ALLOWED_USERIDS: string[] = ['4cc1bb8f-1e70-4c9e-b525-a496f2544926', '9bce80c5-ec4c-457e-a966-7eecee1674d9'];
 
 class MainHandler extends MessageHandler {
+  private searchService: SearchService;
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-web-packages-bot`;
 
-  constructor() {
+  constructor(private readonly LIBRARIES_API_KEY: string) {
     super();
+    this.searchService = new SearchService(LIBRARIES_API_KEY);
   }
 
   async handleEvent(payload: PayloadBundleIncoming) {
@@ -59,7 +61,7 @@ class MainHandler extends MessageHandler {
           conversationId,
           `Searching for "${content}" on Bower ...`
         );
-        const result = await SearchService.searchBower(content);
+        const result = await this.searchService.searchBower(content);
         return this.sendText(
           conversationId,
           result
@@ -70,7 +72,7 @@ class MainHandler extends MessageHandler {
           conversationId,
           `Searching for "${content}" on npm ...`
         );
-        const result = await SearchService.searchNpm(content);
+        const result = await this.searchService.searchNpm(content);
         return this.sendText(
           conversationId,
           result
@@ -81,21 +83,16 @@ class MainHandler extends MessageHandler {
           conversationId,
           `Searching for "${content}" on crates.io ...`
         );
-        const result = await SearchService.searchCrates(content);
+        const result = await this.searchService.searchCrates(content);
         return this.sendText(
           conversationId,
           result
         );
       }
       case MessageType.TYPES: {
-        await this.sendText(
-          conversationId,
-          `Searching for "${content}" on TypeSearch ...`
-        );
-        const result = await SearchService.searchTypes(content);
         return this.sendText(
           conversationId,
-          result
+          `Not implemented yet.`
         );
       }
       case MessageType.UNKNOWN_COMMAND:
