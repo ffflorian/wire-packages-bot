@@ -80,7 +80,7 @@ class CommandService {
       for (const command of commands) {
         if (command.command === parsedCommand) {
           if (command.parseArguments && !parsedArguments) {
-            return [MessageType.NO_ARGUMENTS, '']
+            return [MessageType.NO_ARGUMENTS, ''];
           }
           return [command.type, command.parseArguments ? parsedArguments : ''];
         }
@@ -90,4 +90,4 @@ class CommandService {
   }
 }
 
-export { CommandService, MessageType };
+export {CommandService, MessageType};

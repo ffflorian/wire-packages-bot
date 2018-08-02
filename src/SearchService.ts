@@ -17,14 +17,14 @@ class SearchService {
         page: 1,
         per_page: 10,
         platform,
-        query
-      }
+        query,
+      },
     };
   }
 
   async searchBower(query: string): Promise<string> {
     const options = this.buildOptions('bower', query);
-    console.log({options})
+    console.log({options});
     const result = await SearchService.apiRequest(options);
     return result;
   }
@@ -42,8 +42,8 @@ class SearchService {
   }
 
   async searchTypes(query: string): Promise<string> {
-    return ''
+    return '';
   }
 }
 
-export { SearchService };
+export {SearchService};

@@ -9,4 +9,4 @@ const toHHMMSS = (input: string): string => {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
-export { toHHMMSS };
+export {toHHMMSS};
