@@ -1,17 +1,13 @@
 import { MessageHandler } from '@wireapp/bot-api';
-import { formatCommands } from './commands';
+import { GenericMessageType, PayloadBundleIncoming } from '@wireapp/core/dist/conversation/root';
+import { TextContent } from '@wireapp/core/dist/conversation/content/';
+import { CONVERSATION_EVENT } from '@wireapp/api-client/dist/commonjs/event';
+import { Connection } from '@wireapp/api-client/dist/commonjs/connection';
+import { CommandService, MessageType } from './CommandService';
 
 const { version }: { version: string } = require('../package.json');
 
 const ALLOWED_USERIDS: string[] = ['4cc1bb8f-1e70-4c9e-b525-a496f2544926', '9bce80c5-ec4c-457e-a966-7eecee1674d9'];
-
-enum MessageType {
-  HELP = 'help',
-  SERVICES = 'services',
-  NO_COMMAND = 'no_command',
-  UPTIME = 'uptime',
-  UNKNOWN_COMMAND = 'unknown_command'
-}
 
 const toHHMMSS = (input: string): string => {
   const pad = (t: number) => (t < 10 ? '0' + t : t);
@@ -25,40 +21,34 @@ const toHHMMSS = (input: string): string => {
 };
 
 class MainHandler extends MessageHandler {
-  private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-web-packages-bot`;
+  private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-web-packages-bot`;
 
   constructor() {
     super();
   }
 
-  private parseMessage(text: string): [MessageType, string] {
-    console.log({text})
-    const parsedCommand = text.match(/\/(\w+)(?: (.*))?/);
-    console.log({parsedCommand})
-
-    if (parsedCommand && parsedCommand.length) {
-      const command = parsedCommand[1];
-      const content = parsedCommand[2] || '';
-
-      switch (command) {
-        case MessageType.HELP:
-        case MessageType.SERVICES:
-          return [command, ''];
-        case MessageType.UPTIME:
-          return [command, content];
-        default:
-          return [MessageType.UNKNOWN_COMMAND, ''];
+  async handleEvent(payload: PayloadBundleIncoming) {
+    switch (payload.type) {
+      case GenericMessageType.TEXT: {
+        if (payload.conversation) {
+          const messageContent = payload.content as TextContent;
+          return this.handleText(payload.conversation, messageContent.text);
+        }
+      }
+      case CONVERSATION_EVENT.CONNECT_REQUEST: {
+        if (payload.conversation) {
+          const connectRequest = payload.content as Connection;
+          return this.handleConnectionRequest(connectRequest.to, payload.conversation)
+        }
       }
     }
-    return [MessageType.NO_COMMAND, ''];
   }
 
   async handleText(
     conversationId: string,
-    userId: string,
     text: string
   ): Promise<void> {
-    const [command, content] = this.parseMessage(text);
+    const [command, content] = CommandService.parseCommand(text);
 
     switch (command) {
       case MessageType.HELP:
@@ -73,11 +63,33 @@ class MainHandler extends MessageHandler {
           conversationId,
           `Current uptime: ${toHHMMSS(process.uptime().toString())}`
         );
+      case MessageType.BOWER:
+        return this.sendText(
+          conversationId,
+          `Searching for "${content}" on Bower ...`
+        );
+      case MessageType.NPM:
+        return this.sendText(
+          conversationId,
+          `Searching for "${content}" on npm ...`
+        );
+      case MessageType.CRATES:
+        return this.sendText(
+          conversationId,
+          `Searching for "${content}" on crates.io ...`
+        );
+      case MessageType.TYPES:
+        return this.sendText(
+          conversationId,
+          `Searching for "${content}" on TypeSearch ...`
+        );
       case MessageType.UNKNOWN_COMMAND:
         return this.sendText(
           conversationId,
           `Sorry, I don't know the command "${text}" yet.`
         );
+      case MessageType.NO_ARGUMENTS:
+        return this.sendText(conversationId, `Sorry, you didn't give any arguments to the provided command.`);
     }
   }
 
@@ -87,11 +99,11 @@ class MainHandler extends MessageHandler {
   ): Promise<void> {
     if (ALLOWED_USERIDS.includes(userId)) {
       console.log(`Allowing to connect to ${userId}.`);
-      await this.sendConnectionRequestAnswer(userId, true);
+      await this.sendConnectionResponse(userId, true);
       await this.sendText(conversationId, this.helpText);
     } else {
       console.log(`Refusing to connect to ${userId}.`);
-      await this.sendConnectionRequestAnswer(userId, false);
+      await this.sendConnectionResponse(userId, false);
     }
   }
 }
