@@ -1,5 +1,4 @@
 interface Command {
-  alias?: string;
   name: string;
   description: string;
 }
@@ -26,22 +25,20 @@ const commands: Command[] = [
     description: 'Search for a package on Bower.',
   },
   {
-    name: 'type',
-    alias: 'types',
+    name: 'types',
     description: 'Search for type definitions on TypeSearch.',
   },
   {
-    alias: 'crates',
-    name: 'crate',
+    name: 'crates',
     description: 'Search for a package on crates.io.',
   },
 ];
 
 const formatCommands = (): string =>
-  commands.reduce(
+  commands.sort((a, b) => a.name.localeCompare(b.name)).reduce(
     (prev, command) =>
       prev +
-      `\n- **/${command.name}**${command.alias ? ' (or **/' + command.alias + '**)' : ''}: ${command.description}`,
+      `\n- **/${command.name}**: ${command.description}`,
     '',
   );
 

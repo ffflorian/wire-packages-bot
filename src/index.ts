@@ -17,8 +17,8 @@ import { MainHandler } from './MainHandler';
 (async () => {
   const bot = new Bot();
 
-  bot.addHandler(new SearchHandler());
   bot.addHandler(new MainHandler());
+  bot.addHandler(new SearchHandler());
 
   await bot.start(
     String(process.env.WIRE_EMAIL),
