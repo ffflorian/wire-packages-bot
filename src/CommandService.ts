@@ -85,6 +85,7 @@ class CommandService {
           return [command.type, command.parseArguments ? parsedArguments : ''];
         }
       }
+      return [MessageType.UNKNOWN_COMMAND, parsedCommand];
     }
     return [MessageType.NO_COMMAND, ''];
   }

@@ -97,7 +97,7 @@
   version "8.10.23"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-8.10.23.tgz#e5ccfdafff42af5397c29669b6d7d65f7d629a00"
 
-"@types/request-promise-native@^1.0.15":
+"@types/request-promise-native@1.0.15":
   version "1.0.15"
   resolved "https://registry.yarnpkg.com/@types/request-promise-native/-/request-promise-native-1.0.15.tgz#5b3369fc6aaf9e7fef7b6b688aef4c5759623e16"
   dependencies:
@@ -136,9 +136,9 @@
     spark-md5 "3.0.0"
     tough-cookie "2.4.3"
 
-"@wireapp/bot-api@0.1.0-beta.5":
-  version "0.1.0-beta.5"
-  resolved "https://registry.yarnpkg.com/@wireapp/bot-api/-/bot-api-0.1.0-beta.5.tgz#cbfa8dc1550d90cc8febda0b53ee73174c530b1e"
+"@wireapp/bot-api@0.1.0-beta.6":
+  version "0.1.0-beta.6"
+  resolved "https://registry.yarnpkg.com/@wireapp/bot-api/-/bot-api-0.1.0-beta.6.tgz#0ac4d2adb8ce81921d567a08a28806091b68d6cc"
   dependencies:
     "@wireapp/core" "4.0.1"
     pure-uuid "1.5.3"
