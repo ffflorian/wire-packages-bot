@@ -4,21 +4,12 @@ import { TextContent } from '@wireapp/core/dist/conversation/content/';
 import { CONVERSATION_EVENT } from '@wireapp/api-client/dist/commonjs/event';
 import { Connection } from '@wireapp/api-client/dist/commonjs/connection';
 import { CommandService, MessageType } from './CommandService';
+import { toHHMMSS } from './utils';
+import { SearchService } from './SearchService';
 
 const { version }: { version: string } = require('../package.json');
 
 const ALLOWED_USERIDS: string[] = ['4cc1bb8f-1e70-4c9e-b525-a496f2544926', '9bce80c5-ec4c-457e-a966-7eecee1674d9'];
-
-const toHHMMSS = (input: string): string => {
-  const pad = (t: number) => (t < 10 ? '0' + t : t);
-
-  const uptime = parseInt(input, 10);
-  const hours = Math.floor(uptime / 3600);
-  const minutes = Math.floor((uptime - hours * 3600) / 60);
-  const seconds = uptime - hours * 3600 - minutes * 60;
-
-  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-};
 
 class MainHandler extends MessageHandler {
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-web-packages-bot`;
@@ -63,26 +54,50 @@ class MainHandler extends MessageHandler {
           conversationId,
           `Current uptime: ${toHHMMSS(process.uptime().toString())}`
         );
-      case MessageType.BOWER:
-        return this.sendText(
+      case MessageType.BOWER: {
+        await this.sendText(
           conversationId,
           `Searching for "${content}" on Bower ...`
         );
-      case MessageType.NPM:
+        const result = await SearchService.searchBower(content);
         return this.sendText(
+          conversationId,
+          result
+        );
+      }
+      case MessageType.NPM: {
+        await this.sendText(
           conversationId,
           `Searching for "${content}" on npm ...`
         );
-      case MessageType.CRATES:
+        const result = await SearchService.searchNpm(content);
         return this.sendText(
+          conversationId,
+          result
+        );
+      }
+      case MessageType.CRATES: {
+        await this.sendText(
           conversationId,
           `Searching for "${content}" on crates.io ...`
         );
-      case MessageType.TYPES:
+        const result = await SearchService.searchCrates(content);
         return this.sendText(
+          conversationId,
+          result
+        );
+      }
+      case MessageType.TYPES: {
+        await this.sendText(
           conversationId,
           `Searching for "${content}" on TypeSearch ...`
         );
+        const result = await SearchService.searchTypes(content);
+        return this.sendText(
+          conversationId,
+          result
+        );
+      }
       case MessageType.UNKNOWN_COMMAND:
         return this.sendText(
           conversationId,

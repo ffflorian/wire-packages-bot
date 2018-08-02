@@ -1,7 +1,7 @@
 interface Command {
-  name: string;
-  parseArguments: boolean;
+  command: string;
   description: string;
+  parseArguments: boolean;
   type: MessageType;
 }
 
@@ -20,44 +20,44 @@ enum MessageType {
 
 const commands: Command[] = [
   {
+    command: 'help',
     description: 'Display this message.',
-    name: 'help',
     parseArguments: false,
     type: MessageType.HELP,
   },
   {
+    command: 'services',
     description: 'List the available services.',
-    name: 'services',
     parseArguments: false,
     type: MessageType.SERVICES,
   },
   {
+    command: 'uptime',
     description: 'Get the current uptime of this bot.',
-    name: 'uptime',
     parseArguments: false,
     type: MessageType.UPTIME,
   },
   {
+    command: 'npm',
     description: 'Search for a package on npm.',
-    name: 'npm',
     parseArguments: true,
     type: MessageType.NPM,
   },
   {
+    command: 'bower',
     description: 'Search for a package on Bower.',
-    name: 'bower',
     parseArguments: true,
     type: MessageType.BOWER,
   },
   {
+    command: 'types',
     description: 'Search for type definitions on TypeSearch.',
-    name: 'types',
     parseArguments: true,
     type: MessageType.TYPES,
   },
   {
+    command: 'crates',
     description: 'Search for a package on crates.io.',
-    name: 'crates',
     parseArguments: true,
     type: MessageType.CRATES,
   },
@@ -66,8 +66,8 @@ const commands: Command[] = [
 class CommandService {
   static formatCommands(): string {
     return commands
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .reduce((prev, command) => prev + `\n- **/${command.name}**: ${command.description}`, '');
+      .sort((a, b) => a.command.localeCompare(b.command))
+      .reduce((prev, command) => prev + `\n- **/${command.command}**: ${command.description}`, '');
   }
 
   static parseCommand(message: string): [MessageType, string] {
@@ -78,7 +78,7 @@ class CommandService {
       const parsedArguments = messageMatch[2];
 
       for (const command of commands) {
-        if (command.name === parsedCommand) {
+        if (command.command === parsedCommand) {
           if (command.parseArguments && !parsedArguments) {
             return [MessageType.NO_ARGUMENTS, '']
           }
