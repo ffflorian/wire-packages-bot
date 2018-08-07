@@ -1,7 +1,6 @@
 import {MessageHandler} from '@wireapp/bot-api';
-import {GenericMessageType, PayloadBundleIncoming, ReactionType} from '@wireapp/core/dist/conversation/root';
+import {PayloadBundleIncoming, PayloadBundleType, ReactionType} from '@wireapp/core/dist/conversation/root';
 import {TextContent} from '@wireapp/core/dist/conversation/content/';
-import {CONVERSATION_EVENT} from '@wireapp/api-client/dist/commonjs/event';
 import {Connection} from '@wireapp/api-client/dist/commonjs/connection';
 import {CommandService, MessageType} from './CommandService';
 import {toHHMMSS} from './utils';
@@ -22,13 +21,13 @@ class MainHandler extends MessageHandler {
 
   async handleEvent(payload: PayloadBundleIncoming) {
     switch (payload.type) {
-      case GenericMessageType.TEXT: {
+      case PayloadBundleType.TEXT: {
         if (payload.conversation) {
           const messageContent = payload.content as TextContent;
           return this.handleText(payload.conversation, messageContent.text, payload.id);
         }
       }
-      case CONVERSATION_EVENT.CONNECT_REQUEST: {
+      case PayloadBundleType.CONNECTION_REQUEST: {
         if (payload.conversation) {
           const connectRequest = payload.content as Connection;
           return this.handleConnectionRequest(connectRequest.to, payload.conversation);
