@@ -1,13 +1,13 @@
 import * as request from 'request-promise-native';
 
 interface LibrariesResult {
-  description: string,
-  homepage: string,
-  language: string,
-  latest_release_number: string,
-  latest_release_published_at: string,
-  name: string,
-  stars: number,
+  description: string;
+  homepage: string;
+  language: string;
+  latest_release_number: string;
+  latest_release_published_at: string;
+  name: string;
+  stars: number;
 }
 
 class SearchService {
@@ -36,8 +36,15 @@ class SearchService {
     const result = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce((prev, res) => prev + `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${res.homepage})`, '');
-    } catch(error) {
+      return parsedJSON.reduce(
+        (prev, res) =>
+          prev +
+          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
+            res.homepage
+          })`,
+        ''
+      );
+    } catch (error) {
       return 'Error: could not parse JSON.';
     }
   }
@@ -47,8 +54,15 @@ class SearchService {
     const result = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce((prev, res) => prev + `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${res.homepage})`, '');
-    } catch(error) {
+      return parsedJSON.reduce(
+        (prev, res) =>
+          prev +
+          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
+            res.homepage
+          })`,
+        ''
+      );
+    } catch (error) {
       return 'Error: could not parse JSON.';
     }
   }
@@ -58,8 +72,15 @@ class SearchService {
     const result = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce((prev, res) => prev + `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${res.homepage})`, '');
-    } catch(error) {
+      return parsedJSON.reduce(
+        (prev, res) =>
+          prev +
+          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
+            res.homepage
+          })`,
+        ''
+      );
+    } catch (error) {
       return 'Error: could not parse JSON.';
     }
   }

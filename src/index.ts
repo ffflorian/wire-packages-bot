@@ -6,9 +6,9 @@ import {MainHandler} from './MainHandler';
 
 ['WIRE_EMAIL', 'WIRE_PASSWORD', 'LIBRARIES_IO_API_KEY'].forEach(envVar => {
   if (!process.env[envVar]) {
-    throw new Error(`Environment variable "${envVar}" is not set. Please define it or create a .env file.`)
+    throw new Error(`Environment variable "${envVar}" is not set. Please define it or create a .env file.`);
   }
-})
+});
 
 const bot = new Bot({
   email: process.env.WIRE_EMAIL!,
@@ -18,4 +18,4 @@ const bot = new Bot({
 const mainHandler = new MainHandler(process.env.LIBRARIES_IO_API_KEY!);
 
 bot.addHandler(mainHandler);
-bot.start()
+bot.start();

@@ -39,7 +39,7 @@ class MainHandler extends MessageHandler {
   async handleText(conversationId: string, text: string, messageId: string): Promise<void> {
     const [command, content] = CommandService.parseCommand(text);
 
-    switch(command) {
+    switch (command) {
       case MessageType.UNKNOWN_COMMAND:
       case MessageType.NO_ARGUMENTS:
       case MessageType.NO_COMMAND:
