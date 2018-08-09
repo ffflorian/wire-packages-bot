@@ -63,14 +63,13 @@ const commands: Command[] = [
   },
 ];
 
-class CommandService {
-  static formatCommands(): string {
+const CommandService = {
+  formatCommands(): string {
     return commands
       .sort((a, b) => a.command.localeCompare(b.command))
       .reduce((prev, command) => prev + `\n- **/${command.command}**: ${command.description}`, '');
-  }
-
-  static parseCommand(message: string): [MessageType, string] {
+  },
+  parseCommand(message: string): [MessageType, string] {
     const messageMatch = message.match(/\/(\w+)(?: (.*))?/);
 
     if (messageMatch && messageMatch.length) {
