@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@types/dotenv": "4.0.3",
     "@types/node": "10.5.7",
     "@types/request-promise-native": "1.0.15",
     "@wireapp/bot-api": "0.2.4",

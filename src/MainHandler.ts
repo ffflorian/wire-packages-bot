@@ -14,9 +14,9 @@ class MainHandler extends MessageHandler {
   private searchService: SearchService;
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
 
-  constructor(LIBRARIES_API_KEY: string) {
+  constructor(LIBRARIES_IO_API_KEY: string) {
     super();
-    this.searchService = new SearchService(LIBRARIES_API_KEY);
+    this.searchService = new SearchService(LIBRARIES_IO_API_KEY);
   }
 
   async handleEvent(payload: PayloadBundleIncoming) {
