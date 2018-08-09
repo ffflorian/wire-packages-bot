@@ -1,1 +1,1 @@
-# wire-web-packages-bot
+# wire-packages-bot

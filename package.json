@@ -16,9 +16,9 @@
   },
   "license": "GPL-3.0",
   "main": "dist/index.js",
-  "name": "wire-web-packages-bot",
+  "name": "wire-packages-bot",
   "private": true,
-  "repository": "https://github.com/ffflorian/wire-web-packages-bot.git",
+  "repository": "https://github.com/ffflorian/wire-packages-bot.git",
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist",
