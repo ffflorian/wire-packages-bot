@@ -6,8 +6,7 @@
     "@wireapp/bot-api": "0.2.8",
     "cross-env": "5.2.0",
     "dotenv": "6.0.0",
-    "request": "2.88.0",
-    "request-promise-native": "1.0.5"
+    "request": "2.88.0"
   },
   "devDependencies": {
     "prettier": "1.14.2",
