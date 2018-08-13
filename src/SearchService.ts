@@ -12,21 +12,25 @@ interface LibrariesResult {
 
 interface SearchResult {
   result: string;
+  resultsPerPage: number;
   moreResults: number;
 }
 
 class SearchService {
-  constructor(private readonly LIBRARIES_API_KEY: string) {}
+  private readonly resultsPerPage: number
+  constructor(private readonly LIBRARIES_API_KEY: string) {
+    this.resultsPerPage = 10;
+  }
 
   private static apiRequest(options: request.OptionsWithUrl): Promise<SearchResult> {
     return new Promise((resolve, reject) =>
       request.get(options, (err: Error, result) => {
         const {headers, body} = result;
-        console.log({total: headers['total']});
         const totalResults = Number(headers['total']) || 1;
         const moreResults = Math.max(Math.ceil(totalResults - options.qs.page * options.qs.per_page), 0);
         resolve({
           result: body,
+          resultsPerPage: options.qs.per_page,
           moreResults,
         });
       })
@@ -40,11 +44,21 @@ class SearchService {
       qs: {
         api_key: this.LIBRARIES_API_KEY,
         page,
-        per_page: 10,
+        per_page: this.resultsPerPage,
         platforms: platform,
         q: query,
       },
     };
+  }
+
+  private formatResult(results: LibrariesResult[]): string {
+    return results.reduce((prev, res) => {
+      const {description, homepage, name, language, stars} = res;
+      const localeStarsCount = Number(stars.toLocaleString());
+      const hasStars = localeStarsCount && localeStarsCount > 0 ? `, ${localeStarsCount} star${localeStarsCount === 1 ? '': 's'}` : '';
+      const hasHomepage = homepage ? ` (${homepage})` : '';
+      return prev + `\n- **${name}** (${language}${hasStars}): ${description}${hasHomepage}`;
+    }, '');
   }
 
   async searchBower(query: string, page: number): Promise<SearchResult> {
@@ -52,16 +66,10 @@ class SearchService {
     const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = parsedJSON.reduce(
-        (prev, res) =>
-          prev +
-          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
-            res.homepage
-          })`,
-        ''
-      );
+      const result = this.formatResult(parsedJSON);
       return {
         result: result,
+        resultsPerPage: this.resultsPerPage,
         moreResults,
       };
     } catch (error) {
@@ -74,16 +82,10 @@ class SearchService {
     const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = parsedJSON.reduce(
-        (prev, res) =>
-          prev +
-          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
-            res.homepage
-          })`,
-        ''
-      );
+      const result = this.formatResult(parsedJSON);
       return {
         result: result,
+        resultsPerPage: this.resultsPerPage,
         moreResults,
       };
     } catch (error) {
@@ -96,16 +98,10 @@ class SearchService {
     const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = parsedJSON.reduce(
-        (prev, res) =>
-          prev +
-          `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
-            res.homepage
-          })`,
-        ''
-      );
+      const result = this.formatResult(parsedJSON);
       return {
         result: result,
+        resultsPerPage: this.resultsPerPage,
         moreResults,
       };
     } catch (error) {

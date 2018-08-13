@@ -123,6 +123,7 @@ const CommandService = {
       };
     }
     return {
+      content: message,
       rawCommand: message,
       commandType: CommandType.NO_COMMAND,
     };

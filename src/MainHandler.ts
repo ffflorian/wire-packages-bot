@@ -1,7 +1,7 @@
 import {MessageHandler} from '@wireapp/bot-api';
 import {PayloadBundleIncoming, PayloadBundleType, ReactionType} from '@wireapp/core/dist/conversation/root';
 import {TextContent} from '@wireapp/core/dist/conversation/content/';
-import {Connection} from '@wireapp/api-client/dist/commonjs/connection';
+import {Connection, ConnectionStatus} from '@wireapp/api-client/dist/commonjs/connection';
 import {CommandService, CommandType, ParsedCommand} from './CommandService';
 import {toHHMMSS} from './utils';
 import {SearchService} from './SearchService';
@@ -37,19 +37,19 @@ class MainHandler extends MessageHandler {
         }
       }
       case PayloadBundleType.CONNECTION_REQUEST: {
-        if (payload.conversation) {
-          const connectRequest = payload.content as Connection;
+        const connectRequest = payload.content as Connection;
+        if (payload.conversation && connectRequest.status !== ConnectionStatus.CANCELLED) {
           return this.handleConnectionRequest(connectRequest.to, payload.conversation);
         }
       }
     }
   }
 
-  private static morePagesText(moreResults: number): string {
+  private static morePagesText(moreResults: number, resultsPerPage: number): string {
     const isOne = moreResults === 1;
     return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${
       isOne ? '' : 's'
-    }. Would you like to see more? Answer with "yes" or "no".`;
+    }. Would you like to see ${resultsPerPage} more? Answer with "yes" or "no".`;
   }
 
   async handleText(conversationId: string, text: string, messageId: string): Promise<void> {
@@ -66,16 +66,16 @@ class MainHandler extends MessageHandler {
     }
 
     if (this.answerCache[conversationId]) {
-      const {type, content, page, waitingForContent} = this.answerCache[conversationId];
+      const {content: cachedContent, type, page, waitingForContent} = this.answerCache[conversationId];
       if (waitingForContent) {
         await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
         delete this.answerCache[conversationId];
-        return this.answer(conversationId, {commandType, rawCommand});
+        return this.answer(conversationId, {content, commandType: type, rawCommand});
       }
       switch (commandType) {
         case CommandType.ANSWER_YES: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-          return this.answer(conversationId, {commandType, rawCommand}, page + 1);
+          return this.answer(conversationId, {content: cachedContent, commandType: type, rawCommand}, page + 1);
         }
         case CommandType.ANSWER_NO: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
@@ -111,11 +111,10 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on Bower?');
         }
         await this.sendText(conversationId, `Searching for "${content}" on Bower ...`);
-        let {result, moreResults} = await this.searchService.searchBower(content, page);
+        let {result, moreResults, resultsPerPage} = await this.searchService.searchBower(content, page);
         if (moreResults > 0) {
-          result += MainHandler.morePagesText(moreResults);
+          result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
             page,
             type: CommandType.BOWER,
             waitingForContent: false,
@@ -135,11 +134,10 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on npm?');
         }
         await this.sendText(conversationId, `Searching for "${content}" on npm ...`);
-        let {result, moreResults} = await this.searchService.searchNpm(content, page);
+        let {result, moreResults, resultsPerPage} = await this.searchService.searchNpm(content, page);
         if (moreResults > 0) {
-          result += MainHandler.morePagesText(moreResults);
+          result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
             page,
             type: CommandType.NPM,
             waitingForContent: false,
@@ -159,11 +157,10 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on crates.io?');
         }
         await this.sendText(conversationId, `Searching for "${content}" on crates.io ...`);
-        let {result, moreResults} = await this.searchService.searchCrates(content, page);
+        let {result, moreResults, resultsPerPage} = await this.searchService.searchCrates(content, page);
         if (moreResults > 0) {
-          result += MainHandler.morePagesText(moreResults);
+          result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
             page,
             type: CommandType.CRATES,
             waitingForContent: false,
