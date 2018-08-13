@@ -1,11 +1,18 @@
-interface Command {
+interface BasicCommand {
   command: string;
   description: string;
   parseArguments: boolean;
   type: MessageType;
 }
 
+interface AnswerCommand {
+  command: string;
+  type: MessageType;
+}
+
 enum MessageType {
+  ANSWER_NO,
+  ANSWER_YES,
   BOWER,
   CRATES,
   HELP,
@@ -18,7 +25,18 @@ enum MessageType {
   UPTIME,
 }
 
-const commands: Command[] = [
+const answerCommands: AnswerCommand[] = [
+  {
+    command: 'yes',
+    type: MessageType.ANSWER_YES,
+  },
+  {
+    command: 'no',
+    type: MessageType.ANSWER_NO,
+  },
+]
+
+const basicCommands: BasicCommand[] = [
   {
     command: 'help',
     description: 'Display this message.',
@@ -65,18 +83,24 @@ const commands: Command[] = [
 
 const CommandService = {
   formatCommands(): string {
-    return commands
+    return basicCommands
       .sort((a, b) => a.command.localeCompare(b.command))
       .reduce((prev, command) => prev + `\n- **/${command.command}**: ${command.description}`, '');
   },
   parseCommand(message: string): [MessageType, string] {
     const messageMatch = message.match(/\/(\w+)(?: (.*))?/);
 
+    for (const answerCommand of answerCommands) {
+      if (message.toLowerCase() === answerCommand.command) {
+        return [answerCommand.type, ''];
+      }
+    }
+
     if (messageMatch && messageMatch.length) {
       const parsedCommand = messageMatch[1].toLowerCase();
       const parsedArguments = messageMatch[2];
 
-      for (const command of commands) {
+      for (const command of basicCommands) {
         if (command.command === parsedCommand) {
           if (command.parseArguments && !parsedArguments) {
             return [MessageType.NO_ARGUMENTS, ''];

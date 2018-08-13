@@ -1,4 +1,4 @@
-import * as request from 'request-promise-native';
+import * as request from 'request';
 
 interface LibrariesResult {
   description: string;
@@ -10,20 +10,37 @@ interface LibrariesResult {
   stars: number;
 }
 
+interface SearchResult {
+  result: string;
+  moreResults: number;
+}
+
 class SearchService {
   constructor(private readonly LIBRARIES_API_KEY: string) {}
 
-  private static async apiRequest(options: request.OptionsWithUrl): Promise<string> {
-    return request.get(options) as request.RequestPromise<string>;
+  private static apiRequest(options: request.OptionsWithUrl): Promise<SearchResult> {
+    return new Promise((resolve, reject) =>
+      request.get(options, (err: Error, result) => {
+        const {headers, body} = result;
+        console.log({total: headers['total']});
+        const totalResults = Number(headers['total']) || 1;
+        const moreResults = Math.max(Math.ceil(totalResults - (options.qs.page * options.qs.per_page)), 0);
+        resolve({
+          result: body,
+          moreResults,
+        });
+      })
+    );
+
   }
 
-  private buildOptions(platform: string, query: string): request.OptionsWithUrl {
+  private buildOptions(platform: string, query: string, page = 1): request.OptionsWithUrl {
     return {
       strictSSL: true,
       url: 'https://libraries.io/api/search/',
       qs: {
         api_key: this.LIBRARIES_API_KEY,
-        page: 1,
+        page,
         per_page: 10,
         platforms: platform,
         q: query,
@@ -31,12 +48,12 @@ class SearchService {
     };
   }
 
-  async searchBower(query: string): Promise<string> {
-    const options = this.buildOptions('bower', query);
-    const result = await SearchService.apiRequest(options);
+  async searchBower(query: string, page: number): Promise<SearchResult> {
+    const options = this.buildOptions('bower', query, page);
+    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce(
+      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
+      const result = parsedJSON.reduce(
         (prev, res) =>
           prev +
           `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
@@ -44,17 +61,21 @@ class SearchService {
           })`,
         ''
       );
+      return {
+        result: result,
+        moreResults,
+      }
     } catch (error) {
-      return 'Error: could not parse JSON.';
+      throw new Error('Could not parse JSON.');
     }
   }
 
-  async searchNpm(query: string): Promise<string> {
-    const options = this.buildOptions('npm', query);
-    const result = await SearchService.apiRequest(options);
+  async searchNpm(query: string, page: number): Promise<SearchResult> {
+    const options = this.buildOptions('npm', query, page);
+    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce(
+      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
+      const result = parsedJSON.reduce(
         (prev, res) =>
           prev +
           `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
@@ -62,17 +83,21 @@ class SearchService {
           })`,
         ''
       );
+      return {
+        result: result,
+        moreResults,
+      }
     } catch (error) {
-      return 'Error: could not parse JSON.';
+      throw new Error('Could not parse JSON.');
     }
   }
 
-  async searchCrates(query: string): Promise<string> {
-    const options = this.buildOptions('cargo', query);
-    const result = await SearchService.apiRequest(options);
+  async searchCrates(query: string, page: number): Promise<SearchResult> {
+    const options = this.buildOptions('cargo', query, page);
+    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
     try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(result);
-      return parsedJSON.reduce(
+      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
+      const result = parsedJSON.reduce(
         (prev, res) =>
           prev +
           `\n- **${res.name}** (${res.language}, ${res.stars.toLocaleString()} stars): ${res.description} (${
@@ -80,8 +105,12 @@ class SearchService {
           })`,
         ''
       );
+      return {
+        result: result,
+        moreResults,
+      }
     } catch (error) {
-      return 'Error: could not parse JSON.';
+      throw new Error('Could not parse JSON.');
     }
   }
 
