@@ -24,14 +24,13 @@ class SearchService {
         const {headers, body} = result;
         console.log({total: headers['total']});
         const totalResults = Number(headers['total']) || 1;
-        const moreResults = Math.max(Math.ceil(totalResults - (options.qs.page * options.qs.per_page)), 0);
+        const moreResults = Math.max(Math.ceil(totalResults - options.qs.page * options.qs.per_page), 0);
         resolve({
           result: body,
           moreResults,
         });
       })
     );
-
   }
 
   private buildOptions(platform: string, query: string, page = 1): request.OptionsWithUrl {
@@ -64,7 +63,7 @@ class SearchService {
       return {
         result: result,
         moreResults,
-      }
+      };
     } catch (error) {
       throw new Error('Could not parse JSON.');
     }
@@ -86,7 +85,7 @@ class SearchService {
       return {
         result: result,
         moreResults,
-      }
+      };
     } catch (error) {
       throw new Error('Could not parse JSON.');
     }
@@ -108,7 +107,7 @@ class SearchService {
       return {
         result: result,
         moreResults,
-      }
+      };
     } catch (error) {
       throw new Error('Could not parse JSON.');
     }

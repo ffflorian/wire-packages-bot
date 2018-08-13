@@ -39,7 +39,7 @@ const answerCommands: AnswerCommand[] = [
     command: 'no',
     type: CommandType.ANSWER_NO,
   },
-]
+];
 
 const basicCommands: BasicCommand[] = [
   {
@@ -113,7 +113,7 @@ const CommandService = {
           return {
             rawCommand: parsedCommand,
             commandType: command.type,
-            content: command.parseArguments ? parsedArguments : ''
+            content: command.parseArguments ? parsedArguments : '',
           };
         }
       }
@@ -126,7 +126,7 @@ const CommandService = {
       rawCommand: message,
       commandType: CommandType.NO_COMMAND,
     };
-  }
-}
+  },
+};
 
 export {CommandService, CommandType};

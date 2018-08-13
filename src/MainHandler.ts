@@ -19,7 +19,7 @@ class MainHandler extends MessageHandler {
       page: number;
       type: CommandType;
       waitingForContent: boolean;
-    }
+    };
   };
 
   constructor(LIBRARIES_IO_API_KEY: string) {
@@ -47,7 +47,9 @@ class MainHandler extends MessageHandler {
 
   private static morePagesText(moreResults: number): string {
     const isOne = moreResults === 1;
-    return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${isOne ? '' : 's'}. Would you like to see more? Answer with "yes" or "no".`;
+    return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${
+      isOne ? '' : 's'
+    }. Would you like to see more? Answer with "yes" or "no".`;
   }
 
   async handleText(conversationId: string, text: string, messageId: string): Promise<void> {
@@ -70,7 +72,7 @@ class MainHandler extends MessageHandler {
         delete this.answerCache[conversationId];
         return this.answer(conversationId, {commandType, rawCommand});
       }
-      switch(commandType) {
+      switch (commandType) {
         case CommandType.ANSWER_YES: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
           return this.answer(conversationId, {commandType, rawCommand}, page + 1);
