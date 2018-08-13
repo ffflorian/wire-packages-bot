@@ -2,7 +2,7 @@ import {MessageHandler} from '@wireapp/bot-api';
 import {PayloadBundleIncoming, PayloadBundleType, ReactionType} from '@wireapp/core/dist/conversation/root';
 import {TextContent} from '@wireapp/core/dist/conversation/content/';
 import {Connection} from '@wireapp/api-client/dist/commonjs/connection';
-import {CommandService, MessageType} from './CommandService';
+import {CommandService, CommandType, ParsedCommand} from './CommandService';
 import {toHHMMSS} from './utils';
 import {SearchService} from './SearchService';
 
@@ -15,9 +15,10 @@ class MainHandler extends MessageHandler {
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
   private answerCache: {
     [conversationId: string]: {
-      content: string;
+      content?: string;
       page: number;
-      type: MessageType;
+      type: CommandType;
+      waitingForContent: boolean;
     }
   };
 
@@ -46,53 +47,67 @@ class MainHandler extends MessageHandler {
 
   private static morePagesText(moreResults: number): string {
     const isOne = moreResults === 1;
-    return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${isOne ? '' : 's'}. Would you like to see more? Answer with "yes" or "no".`
+    return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${isOne ? '' : 's'}. Would you like to see more? Answer with "yes" or "no".`;
   }
 
   async handleText(conversationId: string, text: string, messageId: string): Promise<void> {
-    const [command, content] = CommandService.parseCommand(text);
+    const {commandType, content, rawCommand} = CommandService.parseCommand(text);
 
-    switch (command) {
-      case MessageType.UNKNOWN_COMMAND:
-      case MessageType.NO_ARGUMENTS:
-      case MessageType.NO_COMMAND:
-      case MessageType.ANSWER_YES:
-      case MessageType.ANSWER_NO:
+    switch (commandType) {
+      case CommandType.UNKNOWN_COMMAND:
+      case CommandType.NO_COMMAND:
+      case CommandType.ANSWER_YES:
+      case CommandType.ANSWER_NO:
         break;
       default:
         await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
     }
 
     if (this.answerCache[conversationId]) {
-      switch(command) {
-        case MessageType.ANSWER_YES: {
+      const {type, content, page, waitingForContent} = this.answerCache[conversationId];
+      if (waitingForContent) {
+        await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
+        delete this.answerCache[conversationId];
+        return this.answer(conversationId, {commandType, rawCommand});
+      }
+      switch(commandType) {
+        case CommandType.ANSWER_YES: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-          const {type, content, page} = this.answerCache[conversationId];
-          return this.answer(conversationId, type, content, page+1);
+          return this.answer(conversationId, {commandType, rawCommand}, page + 1);
         }
-        case MessageType.ANSWER_NO:
+        case CommandType.ANSWER_NO: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
           delete this.answerCache[conversationId];
           await this.sendText(conversationId, 'Okay.');
           return;
+        }
       }
     }
 
-    return this.answer(conversationId, command, content);
+    return this.answer(conversationId, {commandType, content, rawCommand});
   }
 
-  async answer(conversationId: string, command: MessageType, content: string, page = 1) {
-    switch (command) {
-      case MessageType.HELP:
+  async answer(conversationId: string, parsedCommand: ParsedCommand, page = 1) {
+    const {content, rawCommand, commandType} = parsedCommand;
+    switch (commandType) {
+      case CommandType.HELP:
         return this.sendText(conversationId, this.helpText);
-      case MessageType.SERVICES:
+      case CommandType.SERVICES:
         return this.sendText(
           conversationId,
           'Available services:\n- **/bower**\n- **/npm**\n- **/crates**\n- **/types**'
         );
-      case MessageType.UPTIME:
+      case CommandType.UPTIME:
         return this.sendText(conversationId, `Current uptime: ${toHHMMSS(process.uptime().toString())}`);
-      case MessageType.BOWER: {
+      case CommandType.BOWER: {
+        if (!content) {
+          this.answerCache[conversationId] = {
+            page,
+            type: CommandType.BOWER,
+            waitingForContent: true,
+          };
+          return this.sendText(conversationId, 'What would you like to search on Bower?');
+        }
         await this.sendText(conversationId, `Searching for "${content}" on Bower ...`);
         let {result, moreResults} = await this.searchService.searchBower(content, page);
         if (moreResults > 0) {
@@ -100,14 +115,23 @@ class MainHandler extends MessageHandler {
           this.answerCache[conversationId] = {
             content,
             page,
-            type: MessageType.BOWER,
+            type: CommandType.BOWER,
+            waitingForContent: false,
           };
         } else {
           delete this.answerCache[conversationId];
         }
         return this.sendText(conversationId, result);
       }
-      case MessageType.NPM: {
+      case CommandType.NPM: {
+        if (!content) {
+          this.answerCache[conversationId] = {
+            page,
+            type: CommandType.NPM,
+            waitingForContent: true,
+          };
+          return this.sendText(conversationId, 'What would you like to search on npm?');
+        }
         await this.sendText(conversationId, `Searching for "${content}" on npm ...`);
         let {result, moreResults} = await this.searchService.searchNpm(content, page);
         if (moreResults > 0) {
@@ -115,14 +139,23 @@ class MainHandler extends MessageHandler {
           this.answerCache[conversationId] = {
             content,
             page,
-            type: MessageType.NPM,
+            type: CommandType.NPM,
+            waitingForContent: false,
           };
         } else {
           delete this.answerCache[conversationId];
         }
         return this.sendText(conversationId, result);
       }
-      case MessageType.CRATES: {
+      case CommandType.CRATES: {
+        if (!content) {
+          this.answerCache[conversationId] = {
+            page,
+            type: CommandType.CRATES,
+            waitingForContent: true,
+          };
+          return this.sendText(conversationId, 'What would you like to search on crates.io?');
+        }
         await this.sendText(conversationId, `Searching for "${content}" on crates.io ...`);
         let {result, moreResults} = await this.searchService.searchCrates(content, page);
         if (moreResults > 0) {
@@ -130,20 +163,19 @@ class MainHandler extends MessageHandler {
           this.answerCache[conversationId] = {
             content,
             page,
-            type: MessageType.CRATES,
+            type: CommandType.CRATES,
+            waitingForContent: false,
           };
         } else {
           delete this.answerCache[conversationId];
         }
         return this.sendText(conversationId, result);
       }
-      case MessageType.TYPES: {
+      case CommandType.TYPES: {
         return this.sendText(conversationId, `Not implemented yet.`);
       }
-      case MessageType.UNKNOWN_COMMAND:
-        return this.sendText(conversationId, `Sorry, I don't know the command "${content}" yet.`);
-      case MessageType.NO_ARGUMENTS:
-        return this.sendText(conversationId, `Sorry, you didn't give any arguments to the provided command.`);
+      case CommandType.UNKNOWN_COMMAND:
+        return this.sendText(conversationId, `Sorry, I don't know the command "${rawCommand}" yet.`);
     }
   }
 

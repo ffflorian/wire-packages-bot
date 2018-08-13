@@ -2,21 +2,26 @@ interface BasicCommand {
   command: string;
   description: string;
   parseArguments: boolean;
-  type: MessageType;
+  type: CommandType;
+}
+
+export interface ParsedCommand {
+  content?: string;
+  rawCommand: string;
+  commandType: CommandType;
 }
 
 interface AnswerCommand {
   command: string;
-  type: MessageType;
+  type: CommandType;
 }
 
-enum MessageType {
+enum CommandType {
   ANSWER_NO,
   ANSWER_YES,
   BOWER,
   CRATES,
   HELP,
-  NO_ARGUMENTS,
   NO_COMMAND,
   NPM,
   SERVICES,
@@ -28,11 +33,11 @@ enum MessageType {
 const answerCommands: AnswerCommand[] = [
   {
     command: 'yes',
-    type: MessageType.ANSWER_YES,
+    type: CommandType.ANSWER_YES,
   },
   {
     command: 'no',
-    type: MessageType.ANSWER_NO,
+    type: CommandType.ANSWER_NO,
   },
 ]
 
@@ -41,43 +46,43 @@ const basicCommands: BasicCommand[] = [
     command: 'help',
     description: 'Display this message.',
     parseArguments: false,
-    type: MessageType.HELP,
+    type: CommandType.HELP,
   },
   {
     command: 'services',
     description: 'List the available services.',
     parseArguments: false,
-    type: MessageType.SERVICES,
+    type: CommandType.SERVICES,
   },
   {
     command: 'uptime',
     description: 'Get the current uptime of this bot.',
     parseArguments: false,
-    type: MessageType.UPTIME,
+    type: CommandType.UPTIME,
   },
   {
     command: 'npm',
     description: 'Search for a package on npm.',
     parseArguments: true,
-    type: MessageType.NPM,
+    type: CommandType.NPM,
   },
   {
     command: 'bower',
     description: 'Search for a package on Bower.',
     parseArguments: true,
-    type: MessageType.BOWER,
+    type: CommandType.BOWER,
   },
   {
     command: 'types',
     description: 'Search for type definitions on TypeSearch.',
     parseArguments: true,
-    type: MessageType.TYPES,
+    type: CommandType.TYPES,
   },
   {
     command: 'crates',
     description: 'Search for a package on crates.io.',
     parseArguments: true,
-    type: MessageType.CRATES,
+    type: CommandType.CRATES,
   },
 ];
 
@@ -87,12 +92,15 @@ const CommandService = {
       .sort((a, b) => a.command.localeCompare(b.command))
       .reduce((prev, command) => prev + `\n- **/${command.command}**: ${command.description}`, '');
   },
-  parseCommand(message: string): [MessageType, string] {
+  parseCommand(message: string): ParsedCommand {
     const messageMatch = message.match(/\/(\w+)(?: (.*))?/);
 
     for (const answerCommand of answerCommands) {
       if (message.toLowerCase() === answerCommand.command) {
-        return [answerCommand.type, ''];
+        return {
+          rawCommand: message.toLowerCase(),
+          commandType: answerCommand.type,
+        };
       }
     }
 
@@ -102,16 +110,23 @@ const CommandService = {
 
       for (const command of basicCommands) {
         if (command.command === parsedCommand) {
-          if (command.parseArguments && !parsedArguments) {
-            return [MessageType.NO_ARGUMENTS, ''];
-          }
-          return [command.type, command.parseArguments ? parsedArguments : ''];
+          return {
+            rawCommand: parsedCommand,
+            commandType: command.type,
+            content: command.parseArguments ? parsedArguments : ''
+          };
         }
       }
-      return [MessageType.UNKNOWN_COMMAND, parsedCommand];
+      return {
+        rawCommand: parsedCommand,
+        commandType: CommandType.UNKNOWN_COMMAND,
+      };
     }
-    return [MessageType.NO_COMMAND, ''];
+    return {
+      rawCommand: message,
+      commandType: CommandType.NO_COMMAND,
+    };
   }
 }
 
-export {CommandService, MessageType};
+export {CommandService, CommandType};
