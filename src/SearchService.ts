@@ -11,13 +11,13 @@ interface LibrariesResult {
 }
 
 interface SearchResult {
+  moreResults: number;
   result: string;
   resultsPerPage: number;
-  moreResults: number;
 }
 
 class SearchService {
-  private readonly resultsPerPage: number
+  private readonly resultsPerPage: number;
   constructor(private readonly LIBRARIES_API_KEY: string) {
     this.resultsPerPage = 10;
   }
@@ -55,7 +55,10 @@ class SearchService {
     return results.reduce((prev, res) => {
       const {description, homepage, name, language, stars} = res;
       const localeStarsCount = Number(stars.toLocaleString());
-      const hasStars = localeStarsCount && localeStarsCount > 0 ? `, ${localeStarsCount} star${localeStarsCount === 1 ? '': 's'}` : '';
+      const hasStars =
+        localeStarsCount && localeStarsCount > 0
+          ? `, ${localeStarsCount} star${localeStarsCount === 1 ? '' : 's'}`
+          : '';
       const hasHomepage = homepage ? ` (${homepage})` : '';
       return prev + `\n- **${name}** (${language}${hasStars}): ${description}${hasHomepage}`;
     }, '');
@@ -68,9 +71,9 @@ class SearchService {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
       const result = this.formatResult(parsedJSON);
       return {
-        result: result,
-        resultsPerPage: this.resultsPerPage,
         moreResults,
+        result,
+        resultsPerPage: this.resultsPerPage,
       };
     } catch (error) {
       throw new Error('Could not parse JSON.');
@@ -84,9 +87,9 @@ class SearchService {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
       const result = this.formatResult(parsedJSON);
       return {
-        result: result,
-        resultsPerPage: this.resultsPerPage,
         moreResults,
+        result,
+        resultsPerPage: this.resultsPerPage,
       };
     } catch (error) {
       throw new Error('Could not parse JSON.');
@@ -100,9 +103,9 @@ class SearchService {
       const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
       const result = this.formatResult(parsedJSON);
       return {
-        result: result,
-        resultsPerPage: this.resultsPerPage,
         moreResults,
+        result,
+        resultsPerPage: this.resultsPerPage,
       };
     } catch (error) {
       throw new Error('Could not parse JSON.');

@@ -56,10 +56,10 @@ class MainHandler extends MessageHandler {
     const {commandType, content, rawCommand} = CommandService.parseCommand(text);
 
     switch (commandType) {
-      case CommandType.UNKNOWN_COMMAND:
-      case CommandType.NO_COMMAND:
-      case CommandType.ANSWER_YES:
       case CommandType.ANSWER_NO:
+      case CommandType.ANSWER_YES:
+      case CommandType.NO_COMMAND:
+      case CommandType.UNKNOWN_COMMAND:
         break;
       default:
         await this.sendReaction(conversationId, messageId, ReactionType.LIKE);

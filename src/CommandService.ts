@@ -6,9 +6,9 @@ interface BasicCommand {
 }
 
 export interface ParsedCommand {
+  commandType: CommandType;
   content?: string;
   rawCommand: string;
-  commandType: CommandType;
 }
 
 interface AnswerCommand {
@@ -98,8 +98,8 @@ const CommandService = {
     for (const answerCommand of answerCommands) {
       if (message.toLowerCase() === answerCommand.command) {
         return {
-          rawCommand: message.toLowerCase(),
           commandType: answerCommand.type,
+          rawCommand: message.toLowerCase(),
         };
       }
     }
@@ -111,15 +111,15 @@ const CommandService = {
       for (const command of basicCommands) {
         if (command.command === parsedCommand) {
           return {
-            rawCommand: parsedCommand,
             commandType: command.type,
             content: command.parseArguments ? parsedArguments : '',
+            rawCommand: parsedCommand,
           };
         }
       }
       return {
-        rawCommand: parsedCommand,
         commandType: CommandType.UNKNOWN_COMMAND,
+        rawCommand: parsedCommand,
       };
     }
     return {
