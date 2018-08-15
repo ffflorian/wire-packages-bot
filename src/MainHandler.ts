@@ -8,8 +8,6 @@ import {SearchService} from './SearchService';
 
 const {version}: {version: string} = require('../package.json');
 
-const ALLOWED_USERIDS: string[] = ['4cc1bb8f-1e70-4c9e-b525-a496f2544926', '9bce80c5-ec4c-457e-a966-7eecee1674d9'];
-
 class MainHandler extends MessageHandler {
   private searchService: SearchService;
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
@@ -179,14 +177,8 @@ class MainHandler extends MessageHandler {
   }
 
   async handleConnectionRequest(userId: string, conversationId: string): Promise<void> {
-    if (ALLOWED_USERIDS.includes(userId)) {
-      console.log(`Allowing to connect to ${userId}.`);
-      await this.sendConnectionResponse(userId, true);
-      await this.sendText(conversationId, this.helpText);
-    } else {
-      console.log(`Refusing to connect to ${userId}.`);
-      await this.sendConnectionResponse(userId, false);
-    }
+    await this.sendConnectionResponse(userId, true);
+    await this.sendText(conversationId, this.helpText);
   }
 }
 
