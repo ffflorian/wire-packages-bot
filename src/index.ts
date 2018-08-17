@@ -15,7 +15,10 @@ const bot = new Bot({
   password: process.env.WIRE_PASSWORD!,
 });
 
-const mainHandler = new MainHandler(process.env.LIBRARIES_IO_API_KEY!);
+const mainHandler = new MainHandler({
+  librariesIOApiKey: process.env.LIBRARIES_IO_API_KEY!,
+  developerConversationId: process.env.DEVELOPER_CONVERSATION_ID!,
+});
 
 bot.addHandler(mainHandler);
 bot.start();

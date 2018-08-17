@@ -59,8 +59,9 @@ class SearchService {
         localeStarsCount && localeStarsCount > 0
           ? `, ${localeStarsCount} star${localeStarsCount === 1 ? '' : 's'}`
           : '';
+      const hasBrackets = language && hasStars ? ` (${language}${hasStars})` : '';
       const hasHomepage = homepage ? ` (${homepage})` : '';
-      return prev + `\n- **${name}** (${language}${hasStars}): ${description}${hasHomepage}`;
+      return prev + `\n- **${name}**${hasBrackets}: ${description || ''}${hasHomepage}`;
     }, '');
   }
 

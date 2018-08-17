@@ -1,4 +1,5 @@
 interface BasicCommand {
+  argumentName?: string;
   command: string;
   description: string;
   parseArguments: boolean;
@@ -21,6 +22,7 @@ enum CommandType {
   ANSWER_YES,
   BOWER,
   CRATES,
+  FEEDBACK,
   HELP,
   NO_COMMAND,
   NPM,
@@ -61,28 +63,39 @@ const basicCommands: BasicCommand[] = [
     type: CommandType.UPTIME,
   },
   {
+    argumentName: 'name',
     command: 'npm',
     description: 'Search for a package on npm.',
     parseArguments: true,
     type: CommandType.NPM,
   },
   {
+    argumentName: 'name',
     command: 'bower',
     description: 'Search for a package on Bower.',
     parseArguments: true,
     type: CommandType.BOWER,
   },
   {
+    argumentName: 'name',
     command: 'types',
     description: 'Search for type definitions on TypeSearch.',
     parseArguments: true,
     type: CommandType.TYPES,
   },
   {
+    argumentName: 'name',
     command: 'crates',
     description: 'Search for a package on crates.io.',
     parseArguments: true,
     type: CommandType.CRATES,
+  },
+  {
+    argumentName: 'text',
+    command: 'feedback',
+    description: 'Send feedback to the developer.',
+    parseArguments: true,
+    type: CommandType.FEEDBACK,
   },
 ];
 
@@ -90,7 +103,10 @@ const CommandService = {
   formatCommands(): string {
     return basicCommands
       .sort((a, b) => a.command.localeCompare(b.command))
-      .reduce((prev, command) => prev + `\n- **/${command.command}**: ${command.description}`, '');
+      .reduce((prev, command) => {
+        const {argumentName, command: commandName, description, parseArguments} = command;
+        return prev + `\n- **/${commandName}${parseArguments && argumentName ? ` <${argumentName}>` : ''}**: ${description}`;
+      }, '');
   },
   parseCommand(message: string): ParsedCommand {
     const messageMatch = message.match(/\/(\w+)(?: (.*))?/);

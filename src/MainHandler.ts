@@ -8,9 +8,15 @@ import {SearchService} from './SearchService';
 
 const {version}: {version: string} = require('../package.json');
 
+interface Config {
+  developerConversationId?: string;
+  librariesIOApiKey: string;
+};
+
 class MainHandler extends MessageHandler {
   private searchService: SearchService;
-  private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nWith me you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
+  private readonly developerConversationId?: string;
+  private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nHere you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
   private answerCache: {
     [conversationId: string]: {
       content?: string;
@@ -20,10 +26,18 @@ class MainHandler extends MessageHandler {
     };
   };
 
-  constructor(LIBRARIES_IO_API_KEY: string) {
+  constructor({
+    developerConversationId,
+    librariesIOApiKey,
+  }: Config) {
     super();
-    this.searchService = new SearchService(LIBRARIES_IO_API_KEY);
+    this.developerConversationId = developerConversationId;
+    this.searchService = new SearchService(librariesIOApiKey);
     this.answerCache = {};
+
+    if (!this.developerConversationId) {
+      console.warn('You did not specify a developer conversation ID and will not be able to receive feedback.');
+    }
   }
 
   async handleEvent(payload: PayloadBundleIncoming) {
@@ -113,6 +127,7 @@ class MainHandler extends MessageHandler {
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
+            content,
             page,
             type: CommandType.BOWER,
             waitingForContent: false,
@@ -136,6 +151,7 @@ class MainHandler extends MessageHandler {
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
+            content,
             page,
             type: CommandType.NPM,
             waitingForContent: false,
@@ -154,11 +170,15 @@ class MainHandler extends MessageHandler {
           };
           return this.sendText(conversationId, 'What would you like to search on crates.io?');
         }
+
         await this.sendText(conversationId, `Searching for "${content}" on crates.io ...`);
+
         let {result, moreResults, resultsPerPage} = await this.searchService.searchCrates(content, page);
+
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
+            content,
             page,
             type: CommandType.CRATES,
             waitingForContent: false,
@@ -169,7 +189,25 @@ class MainHandler extends MessageHandler {
         return this.sendText(conversationId, result);
       }
       case CommandType.TYPES: {
-        return this.sendText(conversationId, `Not implemented yet.`);
+        return this.sendText(conversationId, `Sorry, not implemented yet.`);
+      }
+      case CommandType.FEEDBACK: {
+        if (!this.developerConversationId) {
+          return this.sendText(conversationId, `Sorry, the developer did not specify a feedback channel.`);
+        }
+
+        if (!content) {
+          this.answerCache[conversationId] = {
+            page,
+            type: CommandType.FEEDBACK,
+            waitingForContent: true,
+          };
+          return this.sendText(conversationId, 'What would you like to tell the developer?');
+        }
+
+        await this.sendText(this.developerConversationId, `Feedback from a user:\n\n"${content}"`);
+        delete this.answerCache[conversationId];
+        return this.sendText(conversationId, 'Thank you for your feedback.');
       }
       case CommandType.UNKNOWN_COMMAND:
         return this.sendText(conversationId, `Sorry, I don't know the command "${rawCommand}" yet.`);
