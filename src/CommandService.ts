@@ -1,3 +1,5 @@
+import * as logdown from 'logdown';
+
 interface BasicCommand {
   argumentName?: string;
   command: string;
@@ -31,6 +33,11 @@ enum CommandType {
   UNKNOWN_COMMAND,
   UPTIME,
 }
+
+const logger = logdown('wire-packages-bot/CommandService', {
+  logger: console,
+  markdown: false,
+});
 
 const answerCommands: AnswerCommand[] = [
   {
@@ -101,12 +108,12 @@ const basicCommands: BasicCommand[] = [
 
 const CommandService = {
   formatCommands(): string {
-    return basicCommands
-      .sort((a, b) => a.command.localeCompare(b.command))
-      .reduce((prev, command) => {
-        const {argumentName, command: commandName, description, parseArguments} = command;
-        return prev + `\n- **/${commandName}${parseArguments && argumentName ? ` <${argumentName}>` : ''}**: ${description}`;
-      }, '');
+    return basicCommands.sort((a, b) => a.command.localeCompare(b.command)).reduce((prev, command) => {
+      const {argumentName, command: commandName, description, parseArguments} = command;
+      return (
+        prev + `\n- **/${commandName}${parseArguments && argumentName ? ` <${argumentName}>` : ''}**: ${description}`
+      );
+    }, '');
   },
   parseCommand(message: string): ParsedCommand {
     const messageMatch = message.match(/\/(\w+)(?: (.*))?/);
@@ -126,6 +133,7 @@ const CommandService = {
 
       for (const command of basicCommands) {
         if (command.command === parsedCommand) {
+          logger.info(`Found command "${command.command}" for "/${parsedCommand}".`);
           return {
             commandType: command.type,
             content: command.parseArguments ? parsedArguments : '',
@@ -133,11 +141,13 @@ const CommandService = {
           };
         }
       }
+      logger.info(`Unknown command "${parsedCommand}".`);
       return {
         commandType: CommandType.UNKNOWN_COMMAND,
         rawCommand: parsedCommand,
       };
     }
+    logger.info(`No command found for "${message.length > 10 ? message.substr(0, 10) + '...' : message}".`);
     return {
       content: message,
       rawCommand: message,
