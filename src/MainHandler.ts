@@ -82,16 +82,16 @@ class MainHandler extends MessageHandler {
     }
 
     if (this.answerCache[conversationId]) {
-      const {content: cachedContent, type, page, waitingForContent} = this.answerCache[conversationId];
-      if (waitingForContent) {
+      const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[conversationId];
+      if (waitingForContent && commandType === cachedCommandType) {
         await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
         delete this.answerCache[conversationId];
-        return this.answer(conversationId, {content, commandType: type, rawCommand}, senderId);
+        return this.answer(conversationId, {content, commandType: cachedCommandType, rawCommand}, senderId);
       }
       switch (commandType) {
         case CommandType.ANSWER_YES: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-          return this.answer(conversationId, {content: cachedContent, commandType: type, rawCommand}, senderId, page + 1);
+          return this.answer(conversationId, {content: cachedContent, commandType: cachedCommandType, rawCommand}, senderId, page + 1);
         }
         case CommandType.ANSWER_NO: {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
