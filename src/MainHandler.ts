@@ -82,9 +82,7 @@ class MainHandler extends MessageHandler {
       }
       case CommandType.ANSWER_YES: {
         if (this.answerCache[conversationId]) {
-          const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[
-            conversationId
-          ];
+          const {content: cachedContent, type: cachedCommandType, page} = this.answerCache[conversationId];
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
           return this.answer(
             conversationId,
@@ -98,9 +96,7 @@ class MainHandler extends MessageHandler {
       case CommandType.NO_COMMAND:
       case CommandType.UNKNOWN_COMMAND: {
         if (this.answerCache[conversationId]) {
-          const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[
-            conversationId
-          ];
+          const {type: cachedCommandType, waitingForContent} = this.answerCache[conversationId];
           if (waitingForContent) {
             await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
             delete this.answerCache[conversationId];
