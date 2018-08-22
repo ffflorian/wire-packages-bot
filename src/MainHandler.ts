@@ -72,33 +72,46 @@ class MainHandler extends MessageHandler {
     const {commandType, content, rawCommand} = CommandService.parseCommand(text);
 
     switch (commandType) {
-      case CommandType.ANSWER_NO:
-      case CommandType.ANSWER_YES:
-      case CommandType.NO_COMMAND:
-      case CommandType.UNKNOWN_COMMAND:
-        break;
-      default:
-        await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-    }
-
-    if (this.answerCache[conversationId]) {
-      const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[conversationId];
-      if (waitingForContent && commandType === cachedCommandType) {
-        await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-        delete this.answerCache[conversationId];
-        return this.answer(conversationId, {content, commandType: cachedCommandType, rawCommand}, senderId);
-      }
-      switch (commandType) {
-        case CommandType.ANSWER_YES: {
-          await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
-          return this.answer(conversationId, {content: cachedContent, commandType: cachedCommandType, rawCommand}, senderId, page + 1);
-        }
-        case CommandType.ANSWER_NO: {
+      case CommandType.ANSWER_NO: {
+        if (this.answerCache[conversationId]) {
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
           delete this.answerCache[conversationId];
-          await this.sendText(conversationId, 'Okay.');
-          return;
+          return this.sendText(conversationId, 'Okay.');
         }
+        break;
+      }
+      case CommandType.ANSWER_YES: {
+        if (this.answerCache[conversationId]) {
+          const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[
+            conversationId
+          ];
+          await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
+          return this.answer(
+            conversationId,
+            {content: cachedContent, commandType: cachedCommandType, rawCommand},
+            senderId,
+            page + 1
+          );
+        }
+        break;
+      }
+      case CommandType.NO_COMMAND:
+      case CommandType.UNKNOWN_COMMAND: {
+        if (this.answerCache[conversationId]) {
+          const {content: cachedContent, type: cachedCommandType, page, waitingForContent} = this.answerCache[
+            conversationId
+          ];
+          if (waitingForContent) {
+            await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
+            delete this.answerCache[conversationId];
+            return this.answer(conversationId, {content, commandType: cachedCommandType, rawCommand}, senderId);
+          }
+        }
+        return;
+      }
+      default: {
+        await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
+        break;
       }
     }
 
