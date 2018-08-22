@@ -1,4 +1,14 @@
 import * as request from 'request';
+import { Url } from 'url';
+
+interface TypeSearchResult {
+  'd': number;
+  'g': string[];
+  'l': string;
+  'm': string[];
+  'p': string;
+  't': string;
+}
 
 interface LibrariesResult {
   description: string;
@@ -18,23 +28,48 @@ interface SearchResult {
 
 class SearchService {
   private readonly resultsPerPage: number;
-  constructor(private readonly LIBRARIES_API_KEY: string) {
+  private readonly typeSearchIndexUrl =
+    'https://typespublisher.blob.core.windows.net/typespublisher/data/search-index-min.json';
+
+  constructor(private readonly LIBRARIES_IO_API_KEY: string) {
     this.resultsPerPage = 10;
   }
 
-  private static apiRequest(options: request.OptionsWithUrl): Promise<SearchResult> {
+  private static makeRequest(options: request.OptionsWithUrl): Promise<request.Response> {
     return new Promise((resolve, reject) =>
-      request.get(options, (err: Error, result) => {
-        const {headers, body} = result;
-        const totalResults = Number(headers['total']) || 1;
-        const moreResults = Math.max(Math.ceil(totalResults - options.qs.page * options.qs.per_page), 0);
-        resolve({
-          result: body,
-          resultsPerPage: options.qs.per_page,
-          moreResults,
-        });
+      request.get(options, (error: Error, response) => {
+        if (error) {
+          return reject(error);
+        }
+        if (response) {
+          if (response.statusCode === 404) {
+            return reject('Sorry, I could not find this.');
+          }
+
+          if (response.statusCode !== 200) {
+            return reject(`Sorry, something went wrong (status code ${response.statusCode}).`);
+          }
+
+          return resolve(response);
+        }
+
+        reject('No result and no error.');
       })
     );
+  }
+
+  private static async apiRequest(options: request.OptionsWithUrl): Promise<SearchResult> {
+    const response = await SearchService.makeRequest(options)
+
+    const {headers, body} = response;
+    const totalResults = Number(headers['total']) || 1;
+    const moreResults = Math.max(Math.ceil(totalResults - options.qs.page * options.qs.per_page), 0);
+
+    return {
+      result: body,
+      resultsPerPage: options.qs.per_page,
+      moreResults,
+    };
   }
 
   private buildOptions(platform: string, query: string, page = 1): request.OptionsWithUrl {
@@ -42,7 +77,7 @@ class SearchService {
       strictSSL: true,
       url: 'https://libraries.io/api/search/',
       qs: {
-        api_key: this.LIBRARIES_API_KEY,
+        api_key: this.LIBRARIES_IO_API_KEY,
         page,
         per_page: this.resultsPerPage,
         platforms: platform,
@@ -113,8 +148,19 @@ class SearchService {
     }
   }
 
-  async searchTypes(query: string): Promise<string> {
-    return '';
+  async searchTypes(query: string): Promise<SearchResult> {
+    const response = await SearchService.makeRequest({
+      url: this.typeSearchIndexUrl,
+    })
+
+    let typeSearchResults: TypeSearchResult;
+
+    try {
+      typeSearchResults = JSON.parse(response.body);
+    } catch(error) {
+      throw new Error('Could not parse JSON.');
+    }
+
   }
 }
 
