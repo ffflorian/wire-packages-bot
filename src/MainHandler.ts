@@ -22,7 +22,7 @@ class MainHandler extends MessageHandler {
   private readonly helpText = `**Hello!** 😎 This is packages bot v${version} speaking.\nHere you can search for all the packages on Bower, npm, TypeSearch and crates.io. 📦\n\nAvailable commands:\n${CommandService.formatCommands()}\n\nMore information about this bot: https://github.com/ffflorian/wire-packages-bot`;
   private answerCache: {
     [conversationId: string]: {
-      content?: string;
+      parsedArguments?: string;
       page: number;
       type: CommandType;
       waitingForContent: boolean;
@@ -69,7 +69,7 @@ class MainHandler extends MessageHandler {
   }
 
   async handleText(conversationId: string, text: string, messageId: string, senderId: string): Promise<void> {
-    const {commandType, content, rawCommand} = CommandService.parseCommand(text);
+    const {commandType, parsedArguments, rawCommand} = CommandService.parseCommand(text);
 
     switch (commandType) {
       case CommandType.ANSWER_NO: {
@@ -82,11 +82,11 @@ class MainHandler extends MessageHandler {
       }
       case CommandType.ANSWER_YES: {
         if (this.answerCache[conversationId]) {
-          const {content: cachedContent, type: cachedCommandType, page} = this.answerCache[conversationId];
+          const {parsedArguments: cachedContent, type: cachedCommandType, page} = this.answerCache[conversationId];
           await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
           return this.answer(
             conversationId,
-            {content: cachedContent, commandType: cachedCommandType, rawCommand},
+            {parsedArguments: cachedContent, commandType: cachedCommandType, rawCommand},
             senderId,
             page + 1
           );
@@ -100,22 +100,25 @@ class MainHandler extends MessageHandler {
           if (waitingForContent) {
             await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
             delete this.answerCache[conversationId];
-            return this.answer(conversationId, {content, commandType: cachedCommandType, rawCommand}, senderId);
+            return this.answer(conversationId, {parsedArguments, commandType: cachedCommandType, rawCommand}, senderId);
           }
         }
         return;
       }
       default: {
         await this.sendReaction(conversationId, messageId, ReactionType.LIKE);
+        if (this.answerCache[conversationId]) {
+          delete this.answerCache[conversationId];
+        }
         break;
       }
     }
 
-    return this.answer(conversationId, {commandType, content, rawCommand}, senderId);
+    return this.answer(conversationId, {commandType, parsedArguments, rawCommand}, senderId);
   }
 
   async answer(conversationId: string, parsedCommand: ParsedCommand, senderId: string, page = 1) {
-    const {content, rawCommand, commandType} = parsedCommand;
+    const {parsedArguments, rawCommand, commandType} = parsedCommand;
     switch (commandType) {
       case CommandType.HELP: {
         return this.sendText(conversationId, this.helpText);
@@ -130,7 +133,7 @@ class MainHandler extends MessageHandler {
         return this.sendText(conversationId, `Current uptime: ${toHHMMSS(process.uptime().toString())}`);
       }
       case CommandType.BOWER: {
-        if (!content) {
+        if (!parsedArguments) {
           this.answerCache[conversationId] = {
             page,
             type: CommandType.BOWER,
@@ -139,12 +142,12 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on Bower?');
         }
 
-        await this.sendText(conversationId, `Searching for "${content}" on Bower ...`);
+        await this.sendText(conversationId, `Searching for "${parsedArguments}" on Bower ...`);
 
         let searchResult;
 
         try {
-          searchResult = await this.searchService.searchBower(content, page);
+          searchResult = await this.searchService.searchBower(parsedArguments, page);
         } catch (error) {
           this.logger.error(error);
           return this.sendText(conversationId, 'Sorry, an error occured. Please try again later.');
@@ -155,7 +158,7 @@ class MainHandler extends MessageHandler {
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
+            parsedArguments,
             page,
             type: CommandType.BOWER,
             waitingForContent: false,
@@ -166,7 +169,7 @@ class MainHandler extends MessageHandler {
         return this.sendText(conversationId, result);
       }
       case CommandType.NPM: {
-        if (!content) {
+        if (!parsedArguments) {
           this.answerCache[conversationId] = {
             page,
             type: CommandType.NPM,
@@ -175,12 +178,12 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on npm?');
         }
 
-        await this.sendText(conversationId, `Searching for "${content}" on npm ...`);
+        await this.sendText(conversationId, `Searching for "${parsedArguments}" on npm ...`);
 
         let searchResult;
 
         try {
-          searchResult = await this.searchService.searchNpm(content, page);
+          searchResult = await this.searchService.searchNpm(parsedArguments, page);
         } catch (error) {
           this.logger.error(error);
           return this.sendText(conversationId, 'Sorry, an error occured. Please try again later.');
@@ -191,7 +194,7 @@ class MainHandler extends MessageHandler {
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
+            parsedArguments,
             page,
             type: CommandType.NPM,
             waitingForContent: false,
@@ -202,7 +205,7 @@ class MainHandler extends MessageHandler {
         return this.sendText(conversationId, result);
       }
       case CommandType.CRATES: {
-        if (!content) {
+        if (!parsedArguments) {
           this.answerCache[conversationId] = {
             page,
             type: CommandType.CRATES,
@@ -211,12 +214,12 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to search on crates.io?');
         }
 
-        await this.sendText(conversationId, `Searching for "${content}" on crates.io ...`);
+        await this.sendText(conversationId, `Searching for "${parsedArguments}" on crates.io ...`);
 
         let searchResult;
 
         try {
-          searchResult = await this.searchService.searchCrates(content, page);
+          searchResult = await this.searchService.searchCrates(parsedArguments, page);
         } catch (error) {
           this.logger.error(error);
           return this.sendText(conversationId, 'Sorry, an error occured. Please try again later.');
@@ -227,7 +230,7 @@ class MainHandler extends MessageHandler {
         if (moreResults > 0) {
           result += MainHandler.morePagesText(moreResults, resultsPerPage);
           this.answerCache[conversationId] = {
-            content,
+            parsedArguments,
             page,
             type: CommandType.CRATES,
             waitingForContent: false,
@@ -245,7 +248,7 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, `Sorry, the developer did not specify a feedback channel.`);
         }
 
-        if (!content) {
+        if (!parsedArguments) {
           this.answerCache[conversationId] = {
             page,
             type: CommandType.FEEDBACK,
@@ -254,7 +257,7 @@ class MainHandler extends MessageHandler {
           return this.sendText(conversationId, 'What would you like to tell the developer?');
         }
 
-        await this.sendText(this.feedbackConversationId, `Feedback from user "${senderId}":\n"${content}"`);
+        await this.sendText(this.feedbackConversationId, `Feedback from user "${senderId}":\n"${parsedArguments}"`);
         delete this.answerCache[conversationId];
         return this.sendText(conversationId, 'Thank you for your feedback.');
       }
