@@ -1,59 +1,25 @@
-import * as request from 'request';
+import {LibrariesIO, Project} from 'libraries.io';
 
-interface LibrariesResult {
-  description: string;
-  homepage: string;
-  language: string;
-  latest_release_number: string;
-  latest_release_published_at: string;
-  name: string;
-  stars: number;
-}
+const moreResults = (totalResults = 1, page: number, resultsPerPage: number) =>
+  Math.max(Math.ceil(totalResults - page * resultsPerPage), 0);
 
 interface SearchResult {
   moreResults: number;
-  result: string;
   resultsPerPage: number;
+  result: string;
 }
 
 class SearchService {
+  private librariesIO: LibrariesIO;
   private readonly resultsPerPage: number;
-  constructor(private readonly LIBRARIES_API_KEY: string) {
+  constructor(LIBRARIES_API_KEY: string) {
     this.resultsPerPage = 10;
+    this.librariesIO = new LibrariesIO(LIBRARIES_API_KEY);
   }
 
-  private static apiRequest(options: request.OptionsWithUrl): Promise<SearchResult> {
-    return new Promise((resolve, reject) =>
-      request.get(options, (err: Error, result) => {
-        const {headers, body} = result;
-        const totalResults = Number(headers['total']) || 1;
-        const moreResults = Math.max(Math.ceil(totalResults - options.qs.page * options.qs.per_page), 0);
-        resolve({
-          result: body,
-          resultsPerPage: options.qs.per_page,
-          moreResults,
-        });
-      })
-    );
-  }
-
-  private buildOptions(platform: string, query: string, page = 1): request.OptionsWithUrl {
-    return {
-      strictSSL: true,
-      url: 'https://libraries.io/api/search/',
-      qs: {
-        api_key: this.LIBRARIES_API_KEY,
-        page,
-        per_page: this.resultsPerPage,
-        platforms: platform,
-        q: query,
-      },
-    };
-  }
-
-  private formatResult(results: LibrariesResult[]): string {
-    return results.reduce((prev, res) => {
-      const {description, homepage, name, language, stars} = res;
+  private static formatData(projects: Project[]): string {
+    return projects.reduce((prev, project) => {
+      const {description, homepage, name, language, stars} = project;
       const localeStarsCount = Number(stars.toLocaleString());
       const hasStars =
         localeStarsCount && localeStarsCount > 0
@@ -66,51 +32,51 @@ class SearchService {
   }
 
   async searchBower(query: string, page: number): Promise<SearchResult> {
-    const options = this.buildOptions('bower', query, page);
-    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
-    try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = this.formatResult(parsedJSON);
-      return {
-        moreResults,
-        result,
-        resultsPerPage: this.resultsPerPage,
-      };
-    } catch (error) {
-      throw new Error('Could not parse JSON.');
-    }
+    const {data, totalResults} = await this.librariesIO.api.project.search(query, {
+      page,
+      perPage: this.resultsPerPage,
+      filter: {
+        platforms: ['bower'],
+      },
+    });
+
+    return {
+      moreResults: moreResults(totalResults, page, this.resultsPerPage),
+      result: SearchService.formatData(data),
+      resultsPerPage: this.resultsPerPage,
+    };
   }
 
   async searchNpm(query: string, page: number): Promise<SearchResult> {
-    const options = this.buildOptions('npm', query, page);
-    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
-    try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = this.formatResult(parsedJSON);
-      return {
-        moreResults,
-        result,
-        resultsPerPage: this.resultsPerPage,
-      };
-    } catch (error) {
-      throw new Error('Could not parse JSON.');
-    }
+    const {data, totalResults} = await this.librariesIO.api.project.search(query, {
+      page,
+      perPage: this.resultsPerPage,
+      filter: {
+        platforms: ['npm'],
+      },
+    });
+
+    return {
+      moreResults: moreResults(totalResults, page, this.resultsPerPage),
+      result: SearchService.formatData(data),
+      resultsPerPage: this.resultsPerPage,
+    };
   }
 
   async searchCrates(query: string, page: number): Promise<SearchResult> {
-    const options = this.buildOptions('cargo', query, page);
-    const {result: rawResult, moreResults} = await SearchService.apiRequest(options);
-    try {
-      const parsedJSON: LibrariesResult[] = JSON.parse(rawResult);
-      const result = this.formatResult(parsedJSON);
-      return {
-        moreResults,
-        result,
-        resultsPerPage: this.resultsPerPage,
-      };
-    } catch (error) {
-      throw new Error('Could not parse JSON.');
-    }
+    const {data, totalResults} = await this.librariesIO.api.project.search(query, {
+      page,
+      perPage: this.resultsPerPage,
+      filter: {
+        platforms: ['cargo'],
+      },
+    });
+
+    return {
+      moreResults: moreResults(totalResults, page, this.resultsPerPage),
+      result: SearchService.formatData(data),
+      resultsPerPage: this.resultsPerPage,
+    };
   }
 
   async searchTypes(query: string): Promise<string> {

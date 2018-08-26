@@ -65,7 +65,7 @@ class MainHandler extends MessageHandler {
     const isOne = moreResults === 1;
     return `\n\nThere ${isOne ? 'is' : 'are'} ${moreResults} more result${
       isOne ? '' : 's'
-    }. Would you like to see ${resultsPerPage} more? Answer with "yes" or "no".`;
+    }. Would you like to see ${resultsPerPage > moreResults ? moreResults : resultsPerPage} more? Answer with "yes" or "no".`;
   }
 
   async handleText(conversationId: string, text: string, messageId: string, senderId: string): Promise<void> {
